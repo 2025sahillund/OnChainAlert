@@ -1,29 +1,36 @@
-import axios from "axios";
 import { ethers } from "ethers";
+import axios from "axios";
+import processEvent from "../Processor/index.js";
 
-// Backend API URL
 const BACKEND_URL = "http://localhost:8000/events";
 
-export async function handleTransfer(from, to, value) {
+export async function handleTransfer(from, to, value, log) {
   try {
-    const amount = Number(ethers.formatUnits(value, 18));
+    const txHash = log?.transactionHash;
 
-    if (amount < 100) return;
+    if (!txHash) {
+      console.log("⚠️ Missing tx hash, skipping");
+      return;
+    }
 
     const eventData = {
       from,
       to,
-      amount,
-      type: "Transfer"
+      amount: Number(ethers.formatUnits(value, 18)),
+      token: "DMT",
+      transactionHash: txHash,
+      type: "TRANSFER"
     };
 
     console.log("📡 Event captured:", eventData);
 
-    // Send to backend
-    await axios.post(BACKEND_URL, eventData);
+    const filteredEvent = processEvent(eventData);
+    if (!filteredEvent) return;
 
+    await axios.post(BACKEND_URL, filteredEvent);
     console.log("✅ Event sent to backend");
-  } catch (error) {
-    console.error("❌ Failed to send event:", error.message);
+
+  } catch (err) {
+    console.error("❌ Event handler error:", err.message);
   }
 }

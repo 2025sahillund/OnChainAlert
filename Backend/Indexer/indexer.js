@@ -20,17 +20,25 @@ async function startIndexer() {
     console.log("👀 Listening for transfers...");
     console.log("---------------------------------------");
 
-    
-    contract.on("Transfer", (from, to, value) => {
+    // ✅ CONTRACT LISTENER MUST BE INSIDE THIS FUNCTION
+    contract.on("Transfer", (from, to, value, event) => {
       console.log("💎 Transfer detected");
-      handleTransfer(from, to, value);
+
+      const txHash = event?.log?.transactionHash;
+
+      if (!txHash) {
+        console.log("⚠️ Missing tx hash, skipping");
+        return;
+      }
+
+      handleTransfer(from, to, value, event);
     });
 
   } catch (err) {
-    console.log("❌ Connection failed. Retrying...");
-    setTimeout(startIndexer, 2000);
+    console.error("❌ Indexer error:", err.message);
+    setTimeout(startIndexer, 3000);
   }
 }
 
-
+// ✅ THIS EXPORT MUST EXIST
 export default startIndexer;

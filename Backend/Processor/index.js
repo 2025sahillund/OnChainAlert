@@ -1,24 +1,26 @@
-import filterEvent from "./filter.js";
-import sendToDatabase from "./sender.js";
+// import filterEvent from "./filter.js";
+// import sendToDatabase from "./sender.js";
 
-function processEvent(event) {
+// export default function processEvent(event) {
+//   const filtered = filterEvent(event);
+
+//   if (filtered) {
+//     sendToDatabase(filtered);
+//     console.log("Event forwarded");
+//   } else {
+//     console.log("Event ignored");
+//   }
+// }
+import filterEvent from "./filter.js";
+
+export default function processEvent(event) {
   const filtered = filterEvent(event);
 
-  if (filtered) {
-    sendToDatabase(filtered);
-    console.log("Event forwarded");
-  } else {
+  if (!filtered) {
     console.log("Event ignored");
+    return null;
   }
+
+  console.log("Event forwarded");
+  return filtered; // ✅ VERY IMPORTANT
 }
-
-// ---- test event ----
-const testEvent = {
-  from: "0xAAA111",
-  to: "0xBBB222",
-  amount: "500",
-  token: "USDT",
-  txHash: "0xTEST123"
-};
-
-processEvent(testEvent);

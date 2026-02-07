@@ -1,26 +1,13 @@
 import Chat from "../models/chat.model.js";
 
-export const addSubscriber = async (msg, bot) => {
-  const chatId = msg.chat.id.toString();
+export async function addSubscriber(msg, bot) {
+  const chatId = msg.chat.id;
 
-  try {
-    // Check if user already exists
-    let chat = await Chat.findOne({ chatId });
-
-    if (!chat) {
-      // Save new user
-      chat = await Chat.create({
-        chatId,
-        username: msg.chat.username || "",
-        firstName: msg.chat.first_name || ""
-      });
-
-      await bot.sendMessage(chatId, "✅ You're subscribed to alerts!");
-    } else {
-      await bot.sendMessage(chatId, "ℹ️ You are already subscribed.");
-    }
-  } catch (error) {
-    console.error("Error in addSubscriber:", error.message);
-    bot.sendMessage(chatId, "❌ Subscription failed.");
+  const exists = await Chat.findOne({ chatId });
+  if (exists) {
+    return bot.sendMessage(chatId, "✅ You are already subscribed");
   }
-};
+
+  await Chat.create({ chatId });
+  bot.sendMessage(chatId, "🎉 Subscribed to alerts");
+}

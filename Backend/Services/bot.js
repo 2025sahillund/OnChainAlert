@@ -1,41 +1,38 @@
-import TelegramBot from "node-telegram-bot-api";
 import dotenv from "dotenv";
+import TelegramBot from "node-telegram-bot-api";
 import mongoose from "mongoose";
-import { addSubscriber } from "../middleware/addSubscriber.middleware.js";
+import Chat from "../models/chat.model.js";
+import path from "path";
 
-dotenv.config({ path: "../.env" });
-
-// Connect to MongoDB
-await mongoose.connect(process.env.MONGO_URI);
-console.log("MongoDB connected for Telegram bot");
+// 🔥 EXPLICIT PATH (DO NOT CHANGE)
+dotenv.config({
+  path: path.resolve("../.env")
+});
 
 const token = process.env.TELEGRAM_HTTP_API_TOKEN;
 
+console.log("BOT TOKEN:", token);
+
 if (!token) {
-  console.error("Telegram token missing");
+  console.error("❌ Telegram token missing");
   process.exit(1);
 }
 
-console.log("Token loaded:", Boolean(token), token.length);
+await mongoose.connect(process.env.MONGO_URI);
+console.log("✅ MongoDB connected (bot)");
 
 const bot = new TelegramBot(token, { polling: true });
-
-console.log("🤖 Telegram bot started");
+console.log("🤖 Telegram bot LIVE");
 
 bot.on("message", async (msg) => {
-  const chatId = msg.chat.id;
-  const messageText = msg.text;
-
-  if (messageText === "/start") {
-    // Call middleware
-    await addSubscriber(msg, bot);
-  }
-
-  if (messageText === "hii") {
-    bot.sendMessage(chatId, "Hello, how are you");
-  }
-
-  if (messageText === "ping") {
-    bot.sendMessage(chatId, "pong");
+  if (msg.text === "/start") {
+    await Chat.updateOne(
+      { chatId: msg.chat.id },
+      { chatId: msg.chat.id },
+      { upsert: true }
+    );
+    bot.sendMessage(msg.chat.id, "✅ Subscribed to alerts");
   }
 });
+
+export default bot;

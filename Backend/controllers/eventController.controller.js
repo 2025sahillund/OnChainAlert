@@ -1,34 +1,51 @@
-import Event from "../models/EventSchema.model.js";
+import Event from "../models/event.model.js";
+import { sendTelegramAlert } from "../Services/telegram.service.js";
 
-export const getEvents = async (req, res, next) => {
+// ✅ CREATE EVENT
+export async function createEvent(req, res) {
   try {
-    const events = await Event.find()
-      .sort({ time: -1 })
-      .limit(20);
+    const {
+      from,
+      to,
+      amount,
+      token,
+      transactionHash,
+      type
+    } = req.body;
 
-    res.json(events);
-  } catch (error) {
-    next(error);
-  }
-};
-
-export const createEvent = async (req, res, next) => {
-  try {
-    const { from, to, amount, type } = req.body;
-
-    if (!from || !to || !amount || !type) {
-      return res.status(400).json({ message: "Missing required fields" });
+    // ✅ REQUIRED FIELD CHECK
+    if (!transactionHash) {
+      return res.status(400).json({ error: "transactionHash required" });
     }
 
     const event = await Event.create({
       from,
       to,
       amount,
+      token,
+      transactionHash,
       type
     });
 
+    // 🔔 TELEGRAM ALERT (AFTER SAVE)
+    await sendTelegramAlert(
+      `🚨 ${type || "TRANSFER"}\n\n` +
+      `From: ${from}\n` +
+      `To: ${to}\n` +
+      `Amount: ${amount} ${token}\n` +
+      `Tx: ${transactionHash}`
+    );
+
     res.status(201).json(event);
-  } catch (error) {
-    next(error);
+
+  } catch (err) {
+    console.error("❌ Mongo save failed:", err.message);
+    res.status(500).json({ error: "Failed to save event" });
   }
-};
+}
+
+// ✅ GET EVENTS
+export async function getEvents(req, res) {
+  const events = await Event.find().sort({ createdAt: -1 });
+  res.json(events);
+}
